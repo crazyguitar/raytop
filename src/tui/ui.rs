@@ -430,6 +430,7 @@ fn detail_gpu_lines(metrics: Option<&NodeMetrics>, tc: &ThemeColors) -> Vec<Line
 }
 
 fn gpu_line(g: &GpuMetric, tc: &ThemeColors) -> Line<'static> {
+    let gram_pct = g.gram_pct();
     Line::from(vec![
         styled(format!("GPU{:<2}", g.index), tc.muted),
         styled(
@@ -440,9 +441,15 @@ fn gpu_line(g: &GpuMetric, tc: &ThemeColors) -> Line<'static> {
             ),
             color_for_pct(g.utilization, tc),
         ),
+        styled("  Mem ", tc.muted),
         styled(
-            format!("  {:.0}/{:.0}MB", g.gram_used / 1e6, g.gram_total() / 1e6),
-            color_for_pct(g.gram_pct(), tc),
+            format!(
+                "{} {:.0}/{:.0}MB",
+                bar_str(gram_pct, BAR_WIDTH),
+                g.gram_used / 1e6,
+                g.gram_total() / 1e6
+            ),
+            color_for_pct(gram_pct, tc),
         ),
     ])
 }

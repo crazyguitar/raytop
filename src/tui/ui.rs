@@ -227,10 +227,24 @@ fn header_lines<'a>(s: &ClusterStatus, app: &'a App, tc: &'a ThemeColors) -> Vec
         format!("{:.0}/{:.0}", s.used_gpus, s.total_gpus),
         tc,
     );
+    let (phys_mem_used, phys_mem_total) = app
+        .node_metrics
+        .values()
+        .fold((0.0, 0.0), |(u, t), m| (u + m.mem_used, t + m.mem_total));
+    let (mem_used_gb, mem_total_gb) = if phys_mem_total > 0.0 {
+        (phys_mem_used / 1e9, phys_mem_total / 1e9)
+    } else {
+        (s.used_mem_gb, s.total_mem_gb)
+    };
+    let mem_pct = if mem_total_gb > 0.0 {
+        mem_used_gb / mem_total_gb * 100.0
+    } else {
+        0.0
+    };
     let mem = label_bar(
         "Mem: ",
-        s.mem_pct(),
-        format!("{:.1}/{:.1} GB", s.used_mem_gb, s.total_mem_gb),
+        mem_pct,
+        format!("{:.1}/{:.1} GB", mem_used_gb, mem_total_gb),
         tc,
     );
     let obj = label_value(
@@ -444,10 +458,10 @@ fn gpu_line(g: &GpuMetric, tc: &ThemeColors) -> Line<'static> {
         styled("  Mem ", tc.muted),
         styled(
             format!(
-                "{} {:.0}/{:.0}MB",
+                "{} {:.1}/{:.1} GB",
                 bar_str(gram_pct, BAR_WIDTH),
-                g.gram_used / 1e6,
-                g.gram_total() / 1e6
+                g.gram_used / 1000.0,
+                g.gram_total() / 1000.0
             ),
             color_for_pct(gram_pct, tc),
         ),
